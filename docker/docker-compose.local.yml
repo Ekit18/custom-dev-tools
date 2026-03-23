@@ -1,0 +1,50 @@
+volumes:
+  postgres-db:
+  mongo-db:
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-db:/var/lib/postgresql/data
+    networks:
+      default:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    build:
+      context: ..
+      dockerfile: ./docker/mongo/Dockerfile
+    command: --replSet rs0 --keyFile /etc/mongo-keyfile --bind_ip_all --port 27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongo
+      MONGO_INITDB_ROOT_PASSWORD: mongo
+      MONGO_INITDB_DATABASE: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-db:/data/db
+    hostname: mongo
+    networks:
+      default:
+        aliases:
+          - mongo
+    healthcheck:
+      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',version:1,members:[{_id:0,host:'mongo:27017',priority:2}]}) }" | mongosh --port 27017 -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase admin
+      interval: 30s
+      timeout: 15s
+      start_period: 15s
+
+
