@@ -1,10 +1,12 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET must be set in environment variables");
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET must be set in environment variables");
+  }
+  return secret;
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -19,21 +21,14 @@ export async function verifyPassword(
 }
 
 export function generateToken(userId: string, isVerified: boolean): string {
-  if (!JWT_SECRET) {
-    throw new Error("JWT_SECRET is not defined");
-  }
-  return jwt.sign({ userId, isVerified }, JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign({ userId, isVerified }, getJwtSecret(), { expiresIn: "7d" });
 }
 
 export function verifyToken(
   token: string,
 ): { userId: string; isVerified: boolean } | null {
   try {
-    if (!JWT_SECRET) {
-      console.error("[verifyToken] JWT_SECRET is not defined!");
-      return null;
-    }
-    const decoded = jwt.verify(token, JWT_SECRET) as {
+    const decoded = jwt.verify(token, getJwtSecret()) as {
       userId: string;
       isVerified: boolean;
     };
