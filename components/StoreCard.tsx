@@ -235,7 +235,7 @@ export default function StoreCard({
             >
               Make GraphQL Request
             </Button>
-            <Button
+            {/* <Button
               size='small'
               color='primary'
               startIcon={<RequestPage />}
@@ -246,7 +246,7 @@ export default function StoreCard({
               fullWidth
             >
               Generate Feeds
-            </Button>
+            </Button> */}
             <Button
               size='small'
               color='error'

@@ -1,13 +1,11 @@
-'use client';
+"use client";
 
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import { Toaster } from 'react-hot-toast';
-import theme from './theme';
-import './globals.css';
+import { Toaster } from "react-hot-toast";
+import { AppThemeProvider } from "@/components/theme/AppThemeProvider";
+import "./globals.css";
 
 export default function RootLayout({
-  children
+  children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
@@ -17,11 +15,10 @@ export default function RootLayout({
         <title>Shopify OAuth Platform</title>
       </head>
       <body>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
+        <AppThemeProvider>
           <Toaster position="top-right" />
           {children}
-        </ThemeProvider>
+        </AppThemeProvider>
       </body>
     </html>
   );
