@@ -1,0 +1,25 @@
+# Dependencies — reinstalled inside the image
+node_modules
+
+# Next.js build artifacts
+.next
+
+# Local env files — secrets must come from Railway environment variables
+.env
+.env.*
+!.env.example
+
+# Test artifacts
+coverage
+tests
+
+# Dev tooling
+docker
+specs
+*.md
+Makefile
+
+# OS / editor noise
+.DS_Store
+*.log
+.vscode
