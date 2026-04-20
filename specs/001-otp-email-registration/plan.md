@@ -6,7 +6,7 @@
 ## Summary
 
 Extend the existing registration flow to (a) restrict new sign-ups to `@devit.group` email
-addresses only, (b) send a time-limited 6-digit OTP via SendGrid immediately after
+addresses only, (b) send a time-limited 6-digit OTP via Resend immediately after
 account creation, and (c) gate all protected routes behind a verified-email check enforced
 in Next.js middleware. The `isVerified` flag lives in the Prisma User model and is also
 embedded in the JWT so middleware never needs a DB round-trip.
@@ -14,7 +14,7 @@ embedded in the JWT so middleware never needs a DB round-trip.
 ## Technical Context
 
 **Language/Version**: TypeScript 5 / Next.js 16.1.6 (App Router)
-**Primary Dependencies**: Next.js 16, MUI v7 (@mui/material), Prisma 5.22.0, @sendgrid/mail, bcryptjs, jsonwebtoken
+**Primary Dependencies**: Next.js 16, MUI v7 (@mui/material), Prisma 5.22.0, `resend`, bcryptjs, jsonwebtoken
 **Storage**: SQLite via Prisma (prisma/schema.prisma) — User table + new OtpRequest table
 **Testing**: Jest + React Testing Library (to be configured; Biome for lint)
 **Target Platform**: Web browser, responsive (MUI breakpoints, mobile-first)
@@ -29,9 +29,9 @@ embedded in the JWT so middleware never needs a DB round-trip.
 
 | Principle | Gate | Status | Notes |
 |-----------|------|--------|-------|
-| I — Code Quality | TypeScript strict mode; zero Biome warnings; SRP modules | ✅ PASS | New `lib/email/sendgrid.ts` and `lib/otp/generator.ts` modules keep concerns separated. JWT helpers updated in `lib/auth.ts` only. |
+| I — Code Quality | TypeScript strict mode; zero Biome warnings; SRP modules | ✅ PASS | New `lib/email/resend.ts` and `lib/otp/generator.ts` modules keep concerns separated. JWT helpers updated in `lib/auth.ts` only. |
 | I — Code Quality | No inline TODOs without issue references | ✅ PASS | All deferred items tracked in this plan. |
-| II — Testing Standards | ≥ 80% coverage on new files; unit tests for OTP generator and SendGrid service (mocked); integration test for register→verify flow | ✅ PASS | SendGrid MUST be mocked via `jest.mock`; no live email in tests. |
+| II — Testing Standards | ≥ 80% coverage on new files; unit tests for OTP generator and Resend service (mocked); integration test for register→verify flow | ✅ PASS | Resend MUST be mocked via `jest.mock`; no live email in tests. |
 | II — Testing Standards | Test-first feasible: write tests that fail before implementation | ✅ PASS | Integration tests for API routes and unit tests for pure functions planned before code. |
 | III — UX Consistency | MUI components only; no hardcoded design tokens; all 4 UI states (loading/error/empty/success) | ✅ PASS | MUI v7 already in root layout; `OtpVerificationForm` will use MUI `TextField`, `Button`, `CircularProgress`, `Alert`. |
 | III — UX Consistency | WCAG 2.1 AA; axe check passes on new UI | ✅ PASS | MUI components are AA-compliant by default; axe CI check required before merge. |
@@ -78,7 +78,7 @@ components/
 lib/
 ├── auth.ts                         MODIFY — extend JWT payload to { userId, isVerified }
 ├── email/
-│   └── sendgrid.ts                 NEW    — SendGrid initialisation + sendOtpEmail() helper
+│   └── resend.ts                   NEW    — Resend client + sendOtpEmail() helper
 └── otp/
     └── generator.ts                NEW    — generateOtp(), hashOtp(), verifyOtp() pure functions
 
@@ -93,7 +93,7 @@ tests/
 │   └── verify-otp.test.ts          NEW    — POST /api/auth/verify-otp (happy path, wrong code, expired)
 └── unit/
     ├── otp-generator.test.ts       NEW    — generateOtp, hashOtp, verifyOtp
-    └── sendgrid.service.test.ts    NEW    — sendOtpEmail with mocked @sendgrid/mail
+    └── resend.service.test.ts      NEW    — sendOtpEmail with mocked `resend`
 ```
 
 **Structure Decision**: Single Next.js App Router project — no separate frontend/backend split.

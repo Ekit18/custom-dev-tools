@@ -7,25 +7,20 @@
 
 ## Decision 1: Email Delivery Provider
 
-**Decision**: SendGrid via the `@sendgrid/mail` npm package.
+**Decision**: [Resend](https://resend.com) via the official `resend` npm package.
 
-**Rationale**: Explicitly specified in user input. SendGrid provides reliable transactional
-email delivery, a generous free tier, and a simple Node.js SDK that can be called from
-any Next.js Route Handler without additional infrastructure.
+**Rationale**: Resend provides a focused transactional API, a small SDK, and straightforward
+domain verification. It fits Next.js Route Handlers and keeps secrets server-side only.
 
 **Alternatives considered**:
-- Nodemailer + SMTP — works but requires managing an SMTP server or third-party relay; more
-  configuration overhead.
-- AWS SES — cheaper at scale but introduces AWS IAM dependency; out of scope.
-- Resend — modern alternative with great DX, but not what was specified.
+- SendGrid — previously used; replaced by Resend per product decision.
+- Nodemailer + SMTP — more moving parts (SMTP host, ports, TLS).
+- AWS SES — powerful but heavier IAM and setup for this app’s scope.
 
 **Integration pattern in Next.js**:
-SendGrid MUST be initialised server-side only. The API key is read from
-`process.env.SENDGRID_API_KEY` at module load time in `lib/email/sendgrid.ts`.
-This module is never imported from client components; Next.js tree-shaking and the
-`server-only` package guard will enforce this.
-SendGrid calls in API routes are awaited (not fire-and-forget) to allow the route to
-return a 503 if delivery fails, giving the user an immediate actionable error.
+Resend MUST be used server-side only. The API key is read from `process.env.RESEND_API_KEY`
+when sending in `lib/email/resend.ts`. This module is not imported from client components.
+Email sends in API routes are awaited so the route can return 503 if delivery fails.
 
 ---
 
@@ -166,7 +161,7 @@ patterns (e.g., GitHub email verification).
 
 | Unknown | Decision |
 |---------|----------|
-| Email provider | SendGrid (`@sendgrid/mail`) |
+| Email provider | Resend (`resend`) |
 | OTP storage | Database — new `OtpRequest` Prisma model |
 | OTP security | SHA-256 hash (not plaintext) |
 | Middleware check | `isVerified` embedded in JWT; no DB call |

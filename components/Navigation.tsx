@@ -2,6 +2,7 @@
 
 import { Logout, Store } from "@mui/icons-material";
 import { AppBar, Box, Button, Toolbar, Typography } from "@mui/material";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ThemeModeSwitcher from "@/components/theme/ThemeModeSwitcher";
 
@@ -23,8 +24,21 @@ export default function Navigation() {
         </Typography>
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
           <ThemeModeSwitcher />
-          <Button color="inherit" onClick={() => router.push("/dashboard")}>
+          <Button color="inherit" component={Link} href="/dashboard">
             Dashboard
+          </Button>
+          <Button color="inherit" component={Link} href="/dashboard/mock-packs">
+            Mock packs
+          </Button>
+          <Button color="inherit" component={Link} href="/dashboard/pretext">
+            Pretext Demo
+          </Button>
+          <Button
+            color="inherit"
+            component={Link}
+            href="/dashboard/mongo-playground"
+          >
+            Mongo playground
           </Button>
           <Button color="inherit" startIcon={<Logout />} onClick={handleLogout}>
             Logout

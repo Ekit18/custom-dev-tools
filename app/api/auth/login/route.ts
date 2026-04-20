@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
         email: user.email,
         isVerified: user.isVerified,
       },
-      redirectTo: user.isVerified ? null : "/verify-email",
+      redirectTo: null,
     });
 
     response.cookies.set("token", token, {

@@ -2,9 +2,9 @@ export {};
 
 // Environment variables for test runs
 process.env.JWT_SECRET = "test-jwt-secret-at-least-32-characters-long";
-process.env.SENDGRID_API_KEY = "SG.test-key";
-process.env.SENDGRID_FROM_EMAIL = "noreply@devit.group";
 process.env.DATABASE_URL = "file:./test.sqlite";
+process.env.MONGO_DATABASE_URL =
+  "mongodb://127.0.0.1:27017/test?directConnection=true";
 
 type MatchMediaListener = (event: MediaQueryListEvent) => void;
 

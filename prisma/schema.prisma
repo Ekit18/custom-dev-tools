@@ -13,21 +13,9 @@ model User {
   password   String
   isVerified Boolean  @default(false)
   stores     Store[]
+  mockPacks  MockDataPack[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-}
-
-model OtpRequest {
-  id        String    @id @default(cuid())
-  email     String
-  codeHash  String
-  expiresAt DateTime
-  usedAt    DateTime?
-  attempts  Int       @default(0)
-  createdAt DateTime  @default(now())
-
-  @@index([email])
-  @@index([email, createdAt])
 }
 
 model Store {
@@ -44,6 +32,65 @@ model Store {
   storefrontScopes      String
   installedAt           DateTime @default(now())
   updatedAt             DateTime @updatedAt
-  
+  mockGenerationJobs    MockGenerationJob[]
+
   @@unique([userId, shopDomain])
+}
+
+enum MockPackSource {
+  UPLOADED
+  BUILT_IN
+}
+
+enum MockPackStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum MockGenerationJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+model MockDataPack {
+  id     String @id @default(cuid())
+  slug   String @unique
+  name   String
+  source MockPackSource
+  status MockPackStatus @default(ACTIVE)
+
+  createdByUserId String?
+  createdBy       User?   @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  /// CSV payloads live in MongoDB (`MockPackPayload` in prisma-mongo).
+
+  productRowCount    Int @default(0)
+  collectionRowCount Int @default(0)
+  customerRowCount   Int @default(0)
+
+  description String?
+
+  jobs MockGenerationJob[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MockGenerationJob {
+  id     String @id @default(cuid())
+  storeId String
+  store   Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  packId  String
+  pack    MockDataPack @relation(fields: [packId], references: [id], onDelete: Restrict)
+
+  requestedProductCount Int
+  status                MockGenerationJobStatus
+  errorMessage          String? @db.Text
+  createdAt             DateTime @default(now())
+  completedAt           DateTime?
+
+  @@index([storeId, status])
 }

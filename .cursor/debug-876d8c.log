@@ -1,0 +1,1 @@
+{"sessionId":"876d8c","location":"app/api/mock-packs/route.ts:POST","message":"Prisma generated client vs prisma/schema drift","data":{"generatedHasProductsCsv":false,"schemaFileHasProductsCsv":false,"cwd":"D:\\work\\pet-projects\\custom-dev-tools"},"timestamp":1776432902388,"hypothesisId":"H1"}

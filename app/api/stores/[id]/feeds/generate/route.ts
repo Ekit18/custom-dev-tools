@@ -7,6 +7,7 @@ import { parse } from "csv-parse";
 import { decrypt, encrypt } from "@/lib/encryption";
 import { getAccessToken } from '@/lib/access-token';
 import { prisma } from '@/lib/db';
+import { SHOPIFY_ADMIN_API_VERSION } from "@/lib/shopifyAdminVersion";
 
 
 // Helper to get locationId from Shopify
@@ -72,7 +73,7 @@ async function readCsvRows(filePath: string, maxRows: number): Promise<any[]> {
 }
 
 async function shopifyGraphQL(shopDomain: string, accessToken: string, query: string, variables: any = {}) {
-  const url = `https://${shopDomain}/admin/api/2024-01/graphql.json`;
+  const url = `https://${shopDomain}/admin/api/${SHOPIFY_ADMIN_API_VERSION}/graphql.json`;
   const res = await fetch(url, {
     method: "POST",
     headers: {

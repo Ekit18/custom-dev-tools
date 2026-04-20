@@ -1,8 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { generateToken, hashPassword } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { sendOtpEmail } from "@/lib/email/sendgrid";
-import { generateOtp, hashOtp } from "@/lib/otp/generator";
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +22,9 @@ export async function POST(request: NextRequest) {
 
     if (!email.toLowerCase().endsWith("@devit.group")) {
       return NextResponse.json(
-        { error: "Only @devit.group email addresses are permitted to register." },
+        {
+          error: "Only @devit.group email addresses are permitted to register.",
+        },
         { status: 400 },
       );
     }
@@ -44,43 +44,20 @@ export async function POST(request: NextRequest) {
       data: {
         email,
         password: hashedPassword,
-        isVerified: false,
+        isVerified: true,
       },
     });
 
-    const code = generateOtp();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-    await prisma.otpRequest.create({
-      data: {
-        email,
-        codeHash: hashOtp(code),
-        expiresAt,
-      },
-    });
-
-    try {
-      await sendOtpEmail(email, code);
-    } catch (emailError) {
-      console.error("Failed to send OTP email, rolling back:", JSON.stringify(emailError));
-      await prisma.otpRequest.deleteMany({ where: { email } });
-      await prisma.user.delete({ where: { id: user.id } });
-      return NextResponse.json(
-        { error: "Failed to send verification email. Please try again." },
-        { status: 503 },
-      );
-    }
-
-    const token = generateToken(user.id, false);
+    const token = generateToken(user.id, true);
 
     const response = NextResponse.json(
       {
         user: {
           id: user.id,
           email: user.email,
-          isVerified: false,
+          isVerified: true,
         },
-        redirectTo: "/verify-email",
+        redirectTo: "/dashboard",
       },
       { status: 201 },
     );

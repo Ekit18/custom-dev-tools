@@ -1,3 +1,5 @@
+name: custom-shopify-dev-tools-local
+
 volumes:
   postgres-db:
   mongo-db:

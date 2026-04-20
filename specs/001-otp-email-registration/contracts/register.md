@@ -10,7 +10,7 @@
 
 Register a new user with a `@devit.group` email address. Creates the user record with
 `isVerified = false`, issues a JWT cookie, generates a 6-digit OTP, and dispatches it
-via SendGrid. The caller is expected to redirect the user to `/verify-email`.
+via Resend. The caller is expected to redirect the user to `/verify-email`.
 
 ---
 
@@ -49,7 +49,7 @@ Content-Type: application/json
 - `Set-Cookie: token=<JWT>; HttpOnly; SameSite=Lax; Max-Age=604800`
   JWT payload: `{ userId: "clxyz123", isVerified: false }`
 - OTP record created in `OtpRequest` table (hashed, expires in 10 min)
-- OTP email dispatched via SendGrid to `alice@devit.group`
+- OTP email dispatched via Resend to `alice@devit.group`
 
 ---
 
@@ -83,7 +83,7 @@ Other 400 messages:
 
 ### 503 Service Unavailable — OTP email delivery failed
 
-Returned when SendGrid cannot dispatch the OTP. The user record is **rolled back** (or
+Returned when Resend cannot dispatch the OTP. The user record is **rolled back** (or
 the OtpRequest is deleted) so the user can retry registration cleanly.
 
 ```jsonc
@@ -118,4 +118,4 @@ the OtpRequest is deleted) so the user can retry registration cleanly.
 | Any valid email accepted | Only `@devit.group` emails accepted |
 | User created with no verification step | User created with `isVerified = false` |
 | Token issued, redirected to `/dashboard` | Token issued with `isVerified: false`; caller redirects to `/verify-email` |
-| No OTP | OTP generated and emailed via SendGrid |
+| No OTP | OTP generated and emailed via Resend |

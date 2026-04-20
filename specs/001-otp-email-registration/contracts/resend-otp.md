@@ -9,7 +9,7 @@
 ## Purpose
 
 Issue a fresh OTP for the authenticated user's email address. Invalidates all previously
-active OTPs for that email, generates a new 6-digit code, and dispatches it via SendGrid.
+active OTPs for that email, generates a new 6-digit code, and dispatches it via Resend.
 Subject to a rate limit of 3 requests per email per hour.
 
 Authentication is required — the request must carry the `token` cookie.
@@ -42,7 +42,7 @@ No request body required. The target email is derived from `userId` in the JWT.
 **Side effects**:
 - All existing active `OtpRequest` records for the email are marked `usedAt = now()`.
 - A new `OtpRequest` record is created (hashed, expires in 10 min).
-- New OTP email dispatched via SendGrid.
+- New OTP email dispatched via Resend.
 
 ---
 

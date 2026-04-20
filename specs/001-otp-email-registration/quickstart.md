@@ -11,9 +11,9 @@ development machine.
 
 - Node.js 20+ installed
 - `npm` available
-- A [SendGrid](https://sendgrid.com) account with a verified sender address and an API key
+- A [Resend](https://resend.com) account with an API key and a verified sending domain (or Resend’s onboarding domain for development)
 - Access to a `@devit.group` email inbox for manual OTP testing
-  (or use a SendGrid sandbox / email interceptor — see Testing Without Real Emails below)
+  (or use Resend’s test mode / dashboard logs — see Testing Without Real Emails below)
 
 ---
 
@@ -27,18 +27,18 @@ DATABASE_URL="file:./dev.db"
 JWT_SECRET="your-jwt-secret-min-32-chars"
 
 # New — required for this feature
-SENDGRID_API_KEY="SG.xxxxxxxxxxxxxxxxxxxx"
-SENDGRID_FROM_EMAIL="noreply@devit.group"
+RESEND_API_KEY="re_xxxxxxxxxxxxxxxxxxxx"
+RESEND_FROM_EMAIL="Devit <noreply@yourdomain.com>"
 ```
 
-> `SENDGRID_FROM_EMAIL` MUST be a verified sender in your SendGrid account.
+> `RESEND_FROM_EMAIL` must use a domain you have verified in Resend (or Resend’s `onboarding@resend.dev` style sender for quick local tests).
 
 ---
 
 ## 2. Install New Dependency
 
 ```bash
-npm install @sendgrid/mail
+npm install resend
 ```
 
 ---
@@ -143,18 +143,16 @@ these approaches:
 Temporarily return the plain OTP code in the registration response body when
 `NODE_ENV === 'development'`. Remove before committing to any non-dev branch.
 
-### Option B — SendGrid Sandbox Mode
+### Option B — Resend dashboard / limited recipients
 
-Set `mailSettings.sandboxMode.enable = true` in the SendGrid call inside
-`lib/email/sendgrid.ts`. SendGrid will accept the call and return 200 but will not
-actually deliver the email. Read the OTP directly from the `OtpRequest` table in
-Prisma Studio.
+Use the [Resend dashboard](https://resend.com/emails) to inspect sent messages, or send
+only to addresses allowed on your Resend plan. For local debugging you can still read the
+OTP from the `OtpRequest` table in Prisma Studio if you temporarily log it in development.
 
-### Option C — Email Interceptor (recommended for CI)
+### Option C — CI / tests
 
-Use [Mailhog](https://github.com/mailhog/MailHog) or
-[Ethereal](https://ethereal.email) as an SMTP relay and configure a custom transport
-adapter in `lib/email/sendgrid.ts` when `NODE_ENV === 'test'`.
+Integration tests mock `lib/email/resend` so no real email is sent. For broader E2E,
+consider a dedicated test API key and Resend’s test recipient rules.
 
 ---
 
@@ -163,7 +161,7 @@ adapter in `lib/email/sendgrid.ts` when `NODE_ENV === 'test'`.
 ```bash
 # Unit tests
 npm test -- tests/unit/otp-generator.test.ts
-npm test -- tests/unit/sendgrid.service.test.ts
+npm test -- tests/unit/resend.service.test.ts
 
 # Integration tests
 npm test -- tests/integration/register-otp.test.ts

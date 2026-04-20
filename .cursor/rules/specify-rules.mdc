@@ -5,20 +5,24 @@ alwaysApply: true
 ---
 # custom-dev-tools Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-03-27
+Auto-generated from all feature plans. Last updated: 2026-04-17
 
 ## Active Technologies
 - TypeScript 5 / Next.js 16.1.6 (App Router) + Next.js 16, React 19, MUI v7 (`@mui/material`, `@mui/icons-material`) (002-header-theme-switch)
 - Browser localStorage (`theme-preference`) for persisted mode (`light|dark|system`) (002-header-theme-switch)
-
-- TypeScript 5 / Next.js 16.1.6 (App Router) + Next.js 16, MUI v7 (@mui/material), Prisma 5.22.0, @sendgrid/mail, bcryptjs, jsonwebtoken (001-otp-email-registration)
+- TypeScript 5.x, strict; Node.js 20+ (align with `@types/node` in repo) + Next.js 16, React 19, Prisma 5, MUI 7, `csv-parse`, `graphql` (existing). (003-shopify-store-mocks)
+- PostgreSQL (`prisma/schema.prisma`) for app data; MongoDB (`prisma-mongo/schema.prisma`) for mock-pack CSV payloads (`MockPackPayload`); encrypted Shopify tokens unchanged (`lib/encryption`, `Store` model). (003-shopify-store-mocks)
 
 ## Project Structure
 
 ```text
-backend/
-frontend/
-tests/
+app/                 # App Router: routes, layouts, route handlers (app/api/**/route.ts)
+components/          # Shared UI (Navigation, StoreCard, theme) not tied to one route
+lib/                 # Utilities, auth, Prisma helpers, domain logic
+prisma/              # PostgreSQL schema + migrations
+prisma-mongo/        # MongoDB (mock pack payloads)
+tests/               # Jest tests
+public/              # Static assets
 ```
 
 ## Commands
@@ -30,9 +34,8 @@ npm test; npm run lint
 TypeScript 5 / Next.js 16.1.6 (App Router): Follow standard conventions
 
 ## Recent Changes
+- 003-shopify-store-mocks: Mock pack CSVs stored in MongoDB (`prisma-mongo`); Postgres holds catalog metadata and generation jobs.
 - 002-header-theme-switch: Added TypeScript 5 / Next.js 16.1.6 (App Router) + Next.js 16, React 19, MUI v7 (`@mui/material`, `@mui/icons-material`)
-
-- 001-otp-email-registration: Added TypeScript 5 / Next.js 16.1.6 (App Router) + Next.js 16, MUI v7 (@mui/material), Prisma 5.22.0, @sendgrid/mail, bcryptjs, jsonwebtoken
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

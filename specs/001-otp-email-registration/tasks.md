@@ -3,6 +3,8 @@
 description: "Task list for OTP Email Verification for Registration"
 ---
 
+> **Migration (2026):** OTP email now uses **Resend** (`lib/email/resend.ts`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`). Tasks below may still reference SendGrid text from the original delivery.
+
 # Tasks: OTP Email Verification for Registration
 
 **Input**: Design documents from `specs/001-otp-email-registration/`

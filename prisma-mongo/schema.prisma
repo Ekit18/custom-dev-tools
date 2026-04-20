@@ -1,0 +1,21 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/mongo-client"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGO_DATABASE_URL")
+}
+
+/// CSV payloads for a mock pack; `packId` matches `MockDataPack.id` in PostgreSQL.
+model MockPackPayload {
+  packId String @id @map("_id")
+
+  productsCsv    String
+  collectionsCsv String
+  customersCsv   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
