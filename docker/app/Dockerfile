@@ -15,8 +15,8 @@ RUN npm install --production --ignore-scripts && npm cache clean --force
 # Copy rest of the app
 COPY . .
 
-# Generate Prisma clients
-RUN npx prisma generate --schema=prisma-postgres/schema.prisma && npx prisma generate --schema=prisma-mongo/schema.prisma
+# Generate Prisma clients (paths match repo root)
+RUN npx prisma generate --schema=prisma/schema.prisma && npx prisma generate --schema=prisma-mongo/schema.prisma
 
 # Build Next.js app
 RUN npm run build

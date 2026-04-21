@@ -4,6 +4,9 @@ RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 COPY package.json package-lock.json ./
+# postinstall runs prisma generate; schemas must exist before npm ci
+COPY prisma ./prisma
+COPY prisma-mongo ./prisma-mongo
 RUN npm ci --frozen-lockfile
 
 # ---- Stage 2: build ----
@@ -15,9 +18,6 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
-
-# Generate Prisma client for the target platform
-RUN npx prisma generate --schema=prisma/schema.prisma
 
 RUN npm run build
 
