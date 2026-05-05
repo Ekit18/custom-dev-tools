@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import CsvDataTable from "@/components/mock-packs/CsvDataTable";
+import { fetchWithAuth } from "@/lib/fetchWithAuth";
 
 type TabKey = "products" | "collections" | "customers";
 
@@ -35,7 +36,7 @@ export function MockPackDetailClient() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/mock-packs/${id}/data`, {
+      const res = await fetchWithAuth(`/api/mock-packs/${id}/data`, {
         credentials: "include",
       });
       const body = await res.json().catch(() => ({}));

@@ -14,6 +14,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import MockPackTopicSelect from "@/components/MockPackTopicSelect";
 import Navigation from "@/components/Navigation";
+import { fetchWithAuth } from "@/lib/fetchWithAuth";
 
 type PackOption = {
   id: string;
@@ -42,7 +43,7 @@ export default function MockGeneratePage() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/mock-packs", { credentials: "include" });
+      const res = await fetchWithAuth("/api/mock-packs", { credentials: "include" });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error ?? `HTTP ${res.status}`);
@@ -76,7 +77,7 @@ export default function MockGeneratePage() {
     setSubmitting(true);
     setError("");
     try {
-      const res = await fetch(`/api/stores/${storeId}/mock-generate`, {
+      const res = await fetchWithAuth(`/api/stores/${storeId}/mock-generate`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

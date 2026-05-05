@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import { useParams } from "next/navigation";
 import { Store } from "@prisma/client";
+import { fetchWithAuth } from "@/lib/fetchWithAuth";
 
 export default function FeedsPage() {
   const { id: storeId } = useParams();
@@ -34,7 +35,7 @@ export default function FeedsPage() {
 
   const fetchStore = async () => {
     try {
-      const response = await fetch(`/api/stores/${storeId}`);
+      const response = await fetchWithAuth(`/api/stores/${storeId}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -59,7 +60,7 @@ export default function FeedsPage() {
     setLoading(true);
     setResult(null);
     try {
-      const res = await fetch(`/api/stores/${storeId}/feeds/generate`, {
+      const res = await fetchWithAuth(`/api/stores/${storeId}/feeds/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ count: productCount }),

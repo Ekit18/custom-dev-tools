@@ -14,19 +14,32 @@ export async function getMockPackPayload(
   });
 }
 
+/**
+ * Insert or update CSV payload. Implemented as find + update/create instead of
+ * `upsert()` so MongoDB does not need to be a replica set (Prisma maps `upsert`
+ * to a transaction on MongoDB).
+ */
 export async function upsertMockPackPayload(
   packId: string,
   payload: MockPackCsvPayload,
 ): Promise<void> {
-  await prismaMongo.mockPackPayload.upsert({
+  const existing = await prismaMongo.mockPackPayload.findUnique({
     where: { packId },
-    create: {
+  });
+  if (existing) {
+    await prismaMongo.mockPackPayload.update({
+      where: { packId },
+      data: {
+        productsCsv: payload.productsCsv,
+        collectionsCsv: payload.collectionsCsv,
+        customersCsv: payload.customersCsv,
+      },
+    });
+    return;
+  }
+  await prismaMongo.mockPackPayload.create({
+    data: {
       packId,
-      productsCsv: payload.productsCsv,
-      collectionsCsv: payload.collectionsCsv,
-      customersCsv: payload.customersCsv,
-    },
-    update: {
       productsCsv: payload.productsCsv,
       collectionsCsv: payload.collectionsCsv,
       customersCsv: payload.customersCsv,
