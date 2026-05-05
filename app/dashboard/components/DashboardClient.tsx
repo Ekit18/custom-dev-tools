@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { fetchWithAuth } from "@/lib/fetchWithAuth";
 import DeleteConfirmModal from "@/components/DeleteConfirmModal";
 import StoreCard from "@/components/StoreCard";
 
@@ -43,7 +44,7 @@ export function DashboardClient() {
 
   const fetchStores = useCallback(async () => {
     try {
-      const response = await fetch("/api/stores");
+      const response = await fetchWithAuth("/api/stores");
       const data = await response.json();
 
       if (!response.ok) {
@@ -71,7 +72,7 @@ export function DashboardClient() {
     const { storeId } = deleteModal;
 
     try {
-      const response = await fetch(`/api/stores/${storeId}`, {
+      const response = await fetchWithAuth(`/api/stores/${storeId}`, {
         method: "DELETE",
       });
 

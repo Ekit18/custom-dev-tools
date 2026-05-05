@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { fetchWithAuth } from "@/lib/fetchWithAuth";
 
 type PackRow = {
   id: string;
@@ -39,7 +40,7 @@ export function MockPacksCatalogClient() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/mock-packs", { credentials: "include" });
+      const res = await fetchWithAuth("/api/mock-packs", { credentials: "include" });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error ?? `HTTP ${res.status}`);
@@ -59,7 +60,7 @@ export function MockPacksCatalogClient() {
 
   async function archive(id: string) {
     try {
-      const res = await fetch(`/api/mock-packs/${id}`, {
+      const res = await fetchWithAuth(`/api/mock-packs/${id}`, {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -78,7 +79,7 @@ export function MockPacksCatalogClient() {
 
   async function unarchive(id: string) {
     try {
-      const res = await fetch(`/api/mock-packs/${id}`, {
+      const res = await fetchWithAuth(`/api/mock-packs/${id}`, {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

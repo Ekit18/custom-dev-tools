@@ -18,6 +18,7 @@ import {
 import { CheckCircle, OpenInNew, ArrowBack } from '@mui/icons-material';
 import StoreForm from '@/components/StoreForm';
 import toast from 'react-hot-toast';
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
 
 type UpdateState = 'idle' | 'loading' | 'waiting' | 'success' | 'error';
 
@@ -51,7 +52,7 @@ export default function EditStorePage() {
 
   const fetchStore = async () => {
     try {
-      const response = await fetch(`/api/stores/${storeId}`);
+      const response = await fetchWithAuth(`/api/stores/${storeId}`);
       const data = await response.json();
       if (!response.ok) {
         setFetchError(data.error || 'Failed to fetch store');
@@ -83,7 +84,7 @@ export default function EditStorePage() {
     setUpdateState('loading');
     setErrorMsg('');
 
-    const response = await fetch(`/api/stores/${storeId}/oauth/reinitiate`, {
+    const response = await fetchWithAuth(`/api/stores/${storeId}/oauth/reinitiate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

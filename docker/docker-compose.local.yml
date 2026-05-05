@@ -29,24 +29,41 @@ services:
     build:
       context: ..
       dockerfile: ./docker/mongo/Dockerfile
-    command: --replSet rs0 --keyFile /etc/mongo-keyfile --bind_ip_all --port 27017
+    restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: mongo
-      MONGO_INITDB_ROOT_PASSWORD: mongo
-      MONGO_INITDB_DATABASE: mongo
+      MONGODB_ROOT_USER: mongo
+      MONGODB_ROOT_PASSWORD: mongo
+      MONGODB_DATABASE: mongo
+      MONGODB_REPLICA_SET_MODE: primary
+      MONGODB_REPLICA_SET_NAME: rs0
+      # 64 hex chars — use a random secret in production / Railway
+      MONGODB_REPLICA_SET_KEY: a1b2c3d4e5f6789012345678abcdef0123456789abcdef0123456789abcd
+      MONGODB_ADVERTISED_HOSTNAME: mongo
     ports:
       - "27017:27017"
     volumes:
-      - mongo-db:/data/db
+      - mongo-db:/bitnami/mongodb
     hostname: mongo
     networks:
       default:
         aliases:
           - mongo
     healthcheck:
-      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',version:1,members:[{_id:0,host:'mongo:27017',priority:2}]}) }" | mongosh --port 27017 -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase admin
-      interval: 30s
-      timeout: 15s
-      start_period: 15s
-
-
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "admin",
+          "-u",
+          "mongo",
+          "-p",
+          "mongo",
+          "--authenticationDatabase",
+          "admin",
+          "--eval",
+          "db.adminCommand('ping')",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 40s

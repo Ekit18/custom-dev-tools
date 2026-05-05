@@ -20,6 +20,7 @@ import {
   getIntrospectionQuery,
   type GraphQLSchema,
 } from "graphql";
+import { fetchWithAuth } from "@/lib/fetchWithAuth";
 
 const schemas = ["admin", "storefront"];
 
@@ -74,7 +75,7 @@ export default function GraphqlPage() {
 
     const fetchSchema = async () => {
       try {
-        const response = await fetch(`/api/stores/${storeId}/graphql?version=${graphqlSettings.version}&schema=${graphqlSettings.schema}`, {
+        const response = await fetchWithAuth(`/api/stores/${storeId}/graphql?version=${graphqlSettings.version}&schema=${graphqlSettings.schema}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

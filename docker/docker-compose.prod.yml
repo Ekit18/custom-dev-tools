@@ -37,15 +37,18 @@ services:
     build:
       context: ..
       dockerfile: ./docker/mongo/Dockerfile
-    command: --replSet rs0 --keyFile /etc/mongo-keyfile --bind_ip_all --port 27017
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+      MONGODB_ROOT_USER: ${MONGO_USERNAME}
+      MONGODB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGODB_DATABASE: ${MONGO_DATABASE}
+      MONGODB_REPLICA_SET_MODE: primary
+      MONGODB_REPLICA_SET_NAME: ${MONGO_REPLICA_SET_NAME:-rs0}
+      MONGODB_REPLICA_SET_KEY: ${MONGO_REPLICA_SET_KEY}
+      MONGODB_ADVERTISED_HOSTNAME: ${MONGO_ADVERTISED_HOSTNAME:-mongo}
     labels:
       - "traefik.enable=false"
     volumes:
-      - mongo-db:/data/db
+      - mongo-db:/bitnami/mongodb
     ports:
       - "27019:27017"
     hostname: mongo
@@ -54,10 +57,15 @@ services:
         aliases:
           - mongo
     healthcheck:
-      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',version:1,members:[{_id:0,host:'mongo:27017',priority:2}]}) }" | mongosh --port 27017 -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase admin
-      interval: 30s
+      test:
+        [
+          "CMD-SHELL",
+          'mongosh admin -u "$$MONGODB_ROOT_USER" -p "$$MONGODB_ROOT_PASSWORD" --authenticationDatabase admin --eval "db.adminCommand({ ping: 1 })" || exit 1',
+        ]
+      interval: 15s
       timeout: 15s
-      start_period: 15s
+      retries: 10
+      start_period: 60s
 
   app:
     build:
@@ -74,11 +82,12 @@ services:
       PORT: 3000
     ports:
       - "3000:3000"
-    command: sh -c "npx prisma migrate deploy --schema=prisma-postgres/schema.prisma && npx prisma db push --schema=prisma-mongo/schema.prisma && npm run mongo:seed && npm run start"
+    command:
+      sh -c "npx prisma migrate deploy --schema=prisma/schema.prisma && npx prisma db push --schema=prisma-mongo/schema.prisma && npm run start"
     depends_on:
       postgres:
         condition: service_healthy
       mongo:
-        condition: service_started
+        condition: service_healthy
     networks:
       default:
