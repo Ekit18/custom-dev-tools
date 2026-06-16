@@ -73,6 +73,7 @@ export const ADMIN_API_SCOPES = [
   'read_privacy_settings',
   'read_products',
   'write_products',
+  'read_publications',
   'read_purchase_options',
   'write_purchase_options',
   'read_reports',
