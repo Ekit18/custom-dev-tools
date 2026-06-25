@@ -102,6 +102,18 @@ export default function AddStorePage() {
     }
   };
 
+  // Open the popup synchronously inside the click gesture so the browser
+  // doesn't block it; navigate it once the OAuth URL is ready.
+  const openBlankPopup = () => {
+    const popup = window.open(
+      "about:blank",
+      "shopify_oauth",
+      "width=600,height=700,left=200,top=100"
+    );
+    popupRef.current = popup;
+    return popup;
+  };
+
   const handleSubmit = async (data: {
     shopDomain: string;
     clientId: string;
@@ -112,6 +124,10 @@ export default function AddStorePage() {
     setInstallState("loading");
     setErrorMsg("");
 
+    // Must open synchronously within the click gesture, otherwise the popup
+    // blocker kills it after the await below.
+    const popup = openBlankPopup();
+
     const response = await fetch("/api/stores/oauth/initiate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -121,13 +137,19 @@ export default function AddStorePage() {
     const result = await response.json();
 
     if (!response.ok) {
+      popup?.close();
       setInstallState("error");
       setErrorMsg(result.error || "Failed to initiate OAuth");
       throw new Error(result.error || "Failed to initiate OAuth");
     }
 
     setOauthUrl(result.oauthUrl);
-    openPopup(result.oauthUrl);
+    if (popup && !popup.closed) {
+      popup.location.href = result.oauthUrl;
+    } else {
+      // Popup was blocked at open time — fall back to the manual button.
+      openPopup(result.oauthUrl);
+    }
     setInstallState("waiting");
   };
 
