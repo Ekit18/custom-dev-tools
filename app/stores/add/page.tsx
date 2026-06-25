@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   Container,
   Typography,
   Paper,
   Box,
   Alert,
-  Button,
   Stepper,
   Step,
   StepLabel,
@@ -16,14 +14,8 @@ import {
   CircularProgress,
   Chip,
 } from "@mui/material";
-import {
-  CheckCircle,
-  OpenInNew,
-  ArrowBack,
-} from "@mui/icons-material";
 import { ContentCopy, Check } from "@mui/icons-material";
 import StoreForm from "@/components/StoreForm";
-import toast from "react-hot-toast";
 
 const APP_URL =
   typeof window !== 'undefined'
@@ -67,52 +59,11 @@ function CopyableUrl({ value }: { value: string }) {
   );
 }
 
-type InstallState = "idle" | "loading" | "waiting" | "success" | "error";
+type InstallState = "idle" | "loading" | "error";
 
 export default function AddStorePage() {
-  const router = useRouter();
   const [installState, setInstallState] = useState<InstallState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
-  const [oauthUrl, setOauthUrl] = useState("");
-  const popupRef = useRef<Window | null>(null);
-
-  useEffect(() => {
-    const channel = new BroadcastChannel("oauth_callback");
-    channel.onmessage = (event) => {
-      if (event.data?.success) {
-        setInstallState("success");
-        toast.success("Store installed successfully!");
-        setTimeout(() => router.push("/dashboard"), 2000);
-      }
-    };
-    return () => channel.close();
-  }, [router]);
-
-  const openPopup = (url: string) => {
-    const popup = window.open(
-      url,
-      "shopify_oauth",
-      "width=600,height=700,left=200,top=100"
-    );
-    popupRef.current = popup;
-    if (!popup) {
-      toast.error(
-        "Popup was blocked. Please allow popups for this site, then click 'Open Installation Window'."
-      );
-    }
-  };
-
-  // Open the popup synchronously inside the click gesture so the browser
-  // doesn't block it; navigate it once the OAuth URL is ready.
-  const openBlankPopup = () => {
-    const popup = window.open(
-      "about:blank",
-      "shopify_oauth",
-      "width=600,height=700,left=200,top=100"
-    );
-    popupRef.current = popup;
-    return popup;
-  };
 
   const handleSubmit = async (data: {
     shopDomain: string;
@@ -124,10 +75,6 @@ export default function AddStorePage() {
     setInstallState("loading");
     setErrorMsg("");
 
-    // Must open synchronously within the click gesture, otherwise the popup
-    // blocker kills it after the await below.
-    const popup = openBlankPopup();
-
     const response = await fetch("/api/stores/oauth/initiate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -137,74 +84,16 @@ export default function AddStorePage() {
     const result = await response.json();
 
     if (!response.ok) {
-      popup?.close();
       setInstallState("error");
       setErrorMsg(result.error || "Failed to initiate OAuth");
       throw new Error(result.error || "Failed to initiate OAuth");
     }
 
-    setOauthUrl(result.oauthUrl);
-    if (popup && !popup.closed) {
-      popup.location.href = result.oauthUrl;
-    } else {
-      // Popup was blocked at open time — fall back to the manual button.
-      openPopup(result.oauthUrl);
-    }
-    setInstallState("waiting");
+    // Full-page redirect to Shopify's OAuth screen. A top-level navigation is
+    // never popup-blocked (unlike window.open). Shopify redirects back to
+    // /api/stores/oauth/callback once the user authorizes the install.
+    window.location.href = result.oauthUrl;
   };
-
-  if (installState === "waiting" || installState === "success") {
-    return (
-      <Container maxWidth="sm" sx={{ py: 8 }}>
-        <Paper sx={{ p: 4, textAlign: "center" }}>
-          {installState === "success" ? (
-            <>
-              <CheckCircle sx={{ fontSize: 64, color: "success.main", mb: 2 }} />
-              <Typography variant="h5" gutterBottom>
-                Store installed!
-              </Typography>
-              <Typography color="text.secondary" sx={{ mb: 2 }}>
-                Redirecting to dashboard…
-              </Typography>
-              <CircularProgress size={24} />
-            </>
-          ) : (
-            <>
-              <CircularProgress size={48} sx={{ mb: 3 }} />
-              <Typography variant="h6" gutterBottom>
-                Complete installation in the popup window
-              </Typography>
-              <Typography color="text.secondary" sx={{ mb: 3 }}>
-                A Shopify authorization window has been opened. Install the app
-                there to continue.
-              </Typography>
-              <Alert severity="info" sx={{ mb: 3, textAlign: "left" }}>
-                Once you click <strong>Install app</strong> in Shopify, this
-                page will update automatically.
-              </Alert>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                <Button
-                  variant="contained"
-                  startIcon={<OpenInNew />}
-                  onClick={() => openPopup(oauthUrl)}
-                  disabled={!oauthUrl}
-                >
-                  Open Installation Window
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<ArrowBack />}
-                  onClick={() => setInstallState("idle")}
-                >
-                  Start Over
-                </Button>
-              </Box>
-            </>
-          )}
-        </Paper>
-      </Container>
-    );
-  }
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
@@ -275,8 +164,8 @@ export default function AddStorePage() {
             <StepContent>
               <Typography variant="body2" color="text.secondary">
                 Enter your store domain, Client ID and Client Secret in the
-                form below. Click <strong>Install App</strong> — a popup will
-                open for you to authorize the installation.
+                form below. Click <strong>Install App</strong> — you'll be
+                redirected to Shopify to authorize the installation.
               </Typography>
             </StepContent>
           </Step>

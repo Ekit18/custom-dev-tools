@@ -1,29 +1,25 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import {
   Container,
   Typography,
   Paper,
   Box,
   Alert,
-  Button,
   CircularProgress,
   Stepper,
   Step,
   StepLabel,
   StepContent,
 } from '@mui/material';
-import { CheckCircle, OpenInNew, ArrowBack } from '@mui/icons-material';
 import StoreForm from '@/components/StoreForm';
-import toast from 'react-hot-toast';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
 
-type UpdateState = 'idle' | 'loading' | 'waiting' | 'success' | 'error';
+type UpdateState = 'idle' | 'loading' | 'error';
 
 export default function EditStorePage() {
-  const router = useRouter();
   const params = useParams();
   const storeId = params.id as string;
   const [store, setStore] = useState<any>(null);
@@ -31,24 +27,10 @@ export default function EditStorePage() {
   const [fetchError, setFetchError] = useState('');
   const [updateState, setUpdateState] = useState<UpdateState>('idle');
   const [errorMsg, setErrorMsg] = useState('');
-  const [oauthUrl, setOauthUrl] = useState('');
-  const popupRef = useRef<Window | null>(null);
 
   useEffect(() => {
     fetchStore();
   }, [storeId]);
-
-  useEffect(() => {
-    const channel = new BroadcastChannel('oauth_callback');
-    channel.onmessage = (event) => {
-      if (event.data?.success) {
-        setUpdateState('success');
-        toast.success('Scopes updated and app reinstalled!');
-        setTimeout(() => router.push('/dashboard'), 2000);
-      }
-    };
-    return () => channel.close();
-  }, [router]);
 
   const fetchStore = async () => {
     try {
@@ -66,22 +48,6 @@ export default function EditStorePage() {
     }
   };
 
-  const openPopup = (url: string) => {
-    const popup = window.open(url, 'shopify_oauth', 'width=600,height=700,left=200,top=100');
-    popupRef.current = popup;
-    if (!popup) {
-      toast.error('Popup was blocked. Allow popups for this site, then click "Open Installation Window".');
-    }
-  };
-
-  // Open the popup synchronously inside the click gesture so the browser
-  // doesn't block it; navigate it once the OAuth URL is ready.
-  const openBlankPopup = () => {
-    const popup = window.open('about:blank', 'shopify_oauth', 'width=600,height=700,left=200,top=100');
-    popupRef.current = popup;
-    return popup;
-  };
-
   const handleSubmit = async (data: {
     shopDomain: string;
     clientId: string;
@@ -91,10 +57,6 @@ export default function EditStorePage() {
   }) => {
     setUpdateState('loading');
     setErrorMsg('');
-
-    // Must open synchronously within the click gesture, otherwise the popup
-    // blocker kills it after the await below.
-    const popup = openBlankPopup();
 
     const response = await fetchWithAuth(`/api/stores/${storeId}/oauth/reinitiate`, {
       method: 'POST',
@@ -108,20 +70,15 @@ export default function EditStorePage() {
     const result = await response.json();
 
     if (!response.ok) {
-      popup?.close();
       setUpdateState('error');
       setErrorMsg(result.error || 'Failed to update scopes');
       throw new Error(result.error || 'Failed to update scopes');
     }
 
-    setOauthUrl(result.oauthUrl);
-    if (popup && !popup.closed) {
-      popup.location.href = result.oauthUrl;
-    } else {
-      // Popup was blocked at open time — fall back to the manual button.
-      openPopup(result.oauthUrl);
-    }
-    setUpdateState('waiting');
+    // Full-page redirect to Shopify's OAuth screen. A top-level navigation is
+    // never popup-blocked (unlike window.open). Shopify redirects back to
+    // /api/stores/oauth/callback once the user reinstalls with the new scopes.
+    window.location.href = result.oauthUrl;
   };
 
   if (fetchLoading) {
@@ -136,59 +93,6 @@ export default function EditStorePage() {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Alert severity="error">{fetchError || 'Store not found'}</Alert>
-      </Container>
-    );
-  }
-
-  if (updateState === 'waiting' || updateState === 'success') {
-    return (
-      <Container maxWidth="sm" sx={{ py: 8 }}>
-        <Paper sx={{ p: 4, textAlign: 'center' }}>
-          {updateState === 'success' ? (
-            <>
-              <CheckCircle sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
-              <Typography variant="h5" gutterBottom>
-                Scopes updated!
-              </Typography>
-              <Typography color="text.secondary" sx={{ mb: 2 }}>
-                Redirecting to dashboard…
-              </Typography>
-              <CircularProgress size={24} />
-            </>
-          ) : (
-            <>
-              <CircularProgress size={48} sx={{ mb: 3 }} />
-              <Typography variant="h6" gutterBottom>
-                Complete reinstallation in the popup window
-              </Typography>
-              <Typography color="text.secondary" sx={{ mb: 3 }}>
-                A Shopify authorization window has been opened. Reinstall the
-                app there to apply the new scopes.
-              </Typography>
-              <Alert severity="info" sx={{ mb: 3, textAlign: 'left' }}>
-                Once you click <strong>Install app</strong> in Shopify, this
-                page will update automatically.
-              </Alert>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <Button
-                  variant="contained"
-                  startIcon={<OpenInNew />}
-                  onClick={() => openPopup(oauthUrl)}
-                  disabled={!oauthUrl}
-                >
-                  Open Installation Window
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<ArrowBack />}
-                  onClick={() => setUpdateState('idle')}
-                >
-                  Back to Form
-                </Button>
-              </Box>
-            </>
-          )}
-        </Paper>
       </Container>
     );
   }
@@ -239,8 +143,8 @@ export default function EditStorePage() {
             </StepLabel>
             <StepContent>
               <Typography variant="body2" color="text.secondary">
-                A popup will open for you to reinstall the app on your store.
-                This grants the new scopes and issues a fresh access token.
+                You'll be redirected to Shopify to reinstall the app on your
+                store. This grants the new scopes and issues a fresh access token.
               </Typography>
             </StepContent>
           </Step>

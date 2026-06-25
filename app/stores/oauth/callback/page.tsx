@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Container,
   Paper,
@@ -14,21 +14,19 @@ import {
 import { CheckCircle, Error } from '@mui/icons-material';
 
 function OAuthCallbackContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const success = searchParams.get('success') === 'true';
 
   useEffect(() => {
     if (success) {
-      try {
-        const channel = new BroadcastChannel('oauth_callback');
-        channel.postMessage({ success: true });
-        channel.close();
-      } catch (_) {}
-      setTimeout(() => {
-        window.close();
+      // Same-tab redirect flow: send the user on to the dashboard.
+      const timer = setTimeout(() => {
+        router.push('/dashboard');
       }, 2000);
+      return () => clearTimeout(timer);
     }
-  }, [success]);
+  }, [success, router]);
 
   return (
     <Container maxWidth="sm" sx={{ py: 8 }}>
@@ -43,14 +41,14 @@ function OAuthCallbackContent() {
               Your Shopify store has been successfully connected.
             </Typography>
             <Alert severity="success" sx={{ mb: 2 }}>
-              This window will close automatically in 2 seconds...
+              Redirecting to your dashboard…
             </Alert>
             <Button
               variant="contained"
-              onClick={() => window.close()}
+              onClick={() => router.push('/dashboard')}
               fullWidth
             >
-              Close Window
+              Go to Dashboard
             </Button>
           </>
         ) : (
@@ -65,9 +63,9 @@ function OAuthCallbackContent() {
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
               <Button
                 variant="outlined"
-                onClick={() => window.close()}
+                onClick={() => router.push('/dashboard')}
               >
-                Close Window
+                Go to Dashboard
               </Button>
               <Button
                 variant="contained"
