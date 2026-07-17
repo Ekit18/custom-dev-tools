@@ -15,6 +15,7 @@ import {
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   IconButton,
   Popover,
   TextField,
@@ -23,6 +24,8 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import React, { type Dispatch, type SetStateAction } from "react";
+import toast from "react-hot-toast";
+import { fetchWithAuth } from "@/lib/fetchWithAuth";
 
 interface Store {
   id: string;
@@ -42,16 +45,19 @@ interface StoreCardProps {
   setStores: Dispatch<SetStateAction<Store[]>>;
 }
 
-export default function StoreCard({
-  store,
-  onDelete,
-  setStores: _setStores,
-}: StoreCardProps) {
+function isAdminTokenExpired(expireAt: string | null): boolean {
+  if (!expireAt) return true;
+  // Match the 60s safety buffer used server-side in lib/access-token.ts
+  return Date.now() >= new Date(expireAt).getTime() - 60_000;
+}
+
+export default function StoreCard({ store, onDelete, setStores }: StoreCardProps) {
   const router = useRouter();
 
   // Popover state
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [copied, setCopied] = React.useState<string | null>(null);
+  const [refreshingAdminToken, setRefreshingAdminToken] = React.useState(false);
 
   const handleGearClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -62,11 +68,50 @@ export default function StoreCard({
   };
   const open = Boolean(anchorEl);
 
-  const handleCopy = (value: string | null, label: string) => {
-    if (value) {
-      navigator.clipboard.writeText(value);
-      setCopied(label);
-      setTimeout(() => setCopied(null), 1200);
+  const copyToClipboard = (value: string, label: string) => {
+    navigator.clipboard.writeText(value);
+    setCopied(label);
+    setTimeout(() => setCopied(null), 1200);
+  };
+
+  const handleCopyAdminToken = async () => {
+    if (store.adminAccessToken && !isAdminTokenExpired(store.expireAt)) {
+      copyToClipboard(store.adminAccessToken, "admin");
+      return;
+    }
+
+    setRefreshingAdminToken(true);
+    try {
+      const response = await fetchWithAuth(
+        `/api/stores/${store.id}/refresh-token`
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        toast.error(data.error || "Failed to refresh access token");
+        return;
+      }
+      setStores((prev) =>
+        prev.map((s) =>
+          s.id === store.id
+            ? {
+                ...s,
+                adminAccessToken: data.shopifyAccessToken,
+                expireAt: data.expireAt,
+              }
+            : s
+        )
+      );
+      copyToClipboard(data.shopifyAccessToken, "admin");
+    } catch {
+      toast.error("Network error while refreshing access token");
+    } finally {
+      setRefreshingAdminToken(false);
+    }
+  };
+
+  const handleCopyStorefrontToken = () => {
+    if (store.storefrontAccessToken) {
+      copyToClipboard(store.storefrontAccessToken, "storefront");
     }
   };
 
@@ -166,17 +211,32 @@ export default function StoreCard({
                 sx: { borderRadius: 2, fontSize: 13 },
               }}
             />
-            <Tooltip title={copied === "admin" ? "Copied!" : "Copy"}>
-              <IconButton
-                onClick={() => handleCopy(store.adminAccessToken, "admin")}
-                size="small"
-                sx={{ ml: 0.5 }}
-              >
-                <CopyAll
-                  fontSize="small"
-                  color={copied === "admin" ? "success" : "inherit"}
-                />
-              </IconButton>
+            <Tooltip
+              title={
+                copied === "admin"
+                  ? "Copied!"
+                  : refreshingAdminToken
+                    ? "Refreshing..."
+                    : "Copy"
+              }
+            >
+              <span>
+                <IconButton
+                  onClick={handleCopyAdminToken}
+                  size="small"
+                  sx={{ ml: 0.5 }}
+                  disabled={refreshingAdminToken}
+                >
+                  {refreshingAdminToken ? (
+                    <CircularProgress size={16} />
+                  ) : (
+                    <CopyAll
+                      fontSize="small"
+                      color={copied === "admin" ? "success" : "inherit"}
+                    />
+                  )}
+                </IconButton>
+              </span>
             </Tooltip>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -192,9 +252,7 @@ export default function StoreCard({
             />
             <Tooltip title={copied === "storefront" ? "Copied!" : "Copy"}>
               <IconButton
-                onClick={() =>
-                  handleCopy(store.storefrontAccessToken, "storefront")
-                }
+                onClick={handleCopyStorefrontToken}
                 size="small"
                 sx={{ ml: 0.5 }}
               >
